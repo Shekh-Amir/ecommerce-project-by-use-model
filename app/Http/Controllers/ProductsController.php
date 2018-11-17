@@ -449,8 +449,10 @@ class ProductsController extends Controller
             Session::forget('coupon_code');
            $data=$request->all();
            /*echo "<pre>"; print_r($data);echo "</pre>";die;*/
-           if(empty($data['user_email'])){
+           if(empty(Auth::User()->email)){
             $data['user_email']='';
+           }else{
+            $data['user_email']=Auth::User()->email;
            }
            $session_id=Session::get('session_id');
            if(empty($session_id)){
@@ -713,12 +715,43 @@ class ProductsController extends Controller
             $cartPro->save();
            
           }
+
+          Session::put('order_id',$order_id);
+          Session::put('grand_total',$data['grand_total']);
+          //redirect user ti thanks page after save order..
+          return redirect('/thanks');
          
 
         }
 
 
       }
-      
 
+      public function thanks(Request $request){
+
+        $user_email=Auth::User()->email;
+        DB::table('cart')->where('user_email',$user_email)->delete();
+        return view('products.thanks');
+
+        
+      }
+      public function userOrders(){
+        $user_id=Auth::User()->id;
+        $orders=Order::with('orders')->where('user_id',$user_id)->OrderBy('id','DESC')->get();
+        /*$orders=json_decode(json_encode($orders));
+        echo "<pre>";print_r($orders); "<pre/>"; die;*/
+        return view('/orders.user_orders')->with(compact('orders'));
+
+      }
+
+      public function userOrderDetails($order_id){
+        $user_id=Auth::User()->id;
+        $orderDetails=Order::with('orders')->where('id',$order_id)->first();
+        $orderDetails=json_decode(json_encode($orderDetails));
+        /*echo "<pre>";print_r($orderDetails); "<pre/>"; die;*/
+        return view('orders.user_order_details')->with(compact('orderDetails'));
+
+
+      }
+    
 }
